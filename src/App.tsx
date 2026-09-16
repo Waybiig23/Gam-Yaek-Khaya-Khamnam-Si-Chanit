@@ -71,8 +71,18 @@ const trashVisuals = [
   { emoji: '🛍️', bg: 'bg-green-600 text-white border-green-800 rounded-b-lg border-t-2' },
 ];
 
+let availableWords: typeof wordList = [];
+
+function getNextWord() {
+  if (availableWords.length === 0) {
+    // Refill and shuffle
+    availableWords = [...wordList].sort(() => Math.random() - 0.5);
+  }
+  return availableWords.pop()!;
+}
+
 function generateSingleTrash(): TrashItem {
-  const word = wordList[Math.floor(Math.random() * wordList.length)];
+  const word = getNextWord();
   const style = trashVisuals[Math.floor(Math.random() * trashVisuals.length)];
   
   // Natural distribution across the pile yard (5% to 75% X, 6% to 70% Y)

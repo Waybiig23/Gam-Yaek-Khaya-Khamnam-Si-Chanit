@@ -77,7 +77,7 @@ class SoundEngine {
     }
 
     if (this.masterGain && this.ctx) {
-      const now = this.ctx.currentTime;
+      const now = this.ctx.currentTime + 0.05;
       this.masterGain.gain.cancelScheduledValues(now);
       this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
       this.masterGain.gain.linearRampToValueAtTime(this.isMuted ? 0 : 1, now + 0.1);
@@ -100,7 +100,7 @@ class SoundEngine {
     }
 
     if (this.bgmGain && this.ctx) {
-      const now = this.ctx.currentTime;
+      const now = this.ctx.currentTime + 0.05;
       this.bgmGain.gain.cancelScheduledValues(now);
       this.bgmGain.gain.setValueAtTime(this.bgmGain.gain.value, now);
       this.bgmGain.gain.linearRampToValueAtTime(this.bgmVolume, now + 0.1);
@@ -124,7 +124,7 @@ class SoundEngine {
     this.currentStep = 0;
 
     if (this.bgmGain) {
-      const now = this.ctx.currentTime;
+      const now = this.ctx.currentTime + 0.05;
       this.bgmGain.gain.cancelScheduledValues(now);
       this.bgmGain.gain.setValueAtTime(0, now);
       this.bgmGain.gain.linearRampToValueAtTime(this.bgmVolume, now + 0.5);
@@ -144,7 +144,7 @@ class SoundEngine {
     }
 
     if (this.bgmGain && this.ctx) {
-      const now = this.ctx.currentTime;
+      const now = this.ctx.currentTime + 0.05;
       this.bgmGain.gain.cancelScheduledValues(now);
       this.bgmGain.gain.setValueAtTime(this.bgmGain.gain.value, now);
       this.bgmGain.gain.linearRampToValueAtTime(0, now + 0.3);
@@ -160,7 +160,7 @@ class SoundEngine {
     }
 
     const step = this.currentStep;
-    const now = this.ctx.currentTime;
+    const now = this.ctx.currentTime + 0.05;
 
     // Melody notes (in Hz)
     // C4=261.63, D4=293.66, E4=329.63, G4=392.00, A4=440.00, C5=523.25, D5=587.33, E5=659.25, G5=783.99
@@ -374,7 +374,7 @@ class SoundEngine {
 
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    const now = this.ctx.currentTime;
+    const now = this.ctx.currentTime + 0.05;
 
     osc.type = 'sine';
     osc.frequency.setValueAtTime(320, now);
@@ -394,7 +394,7 @@ class SoundEngine {
     this.initContext();
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
 
-    const now = this.ctx.currentTime;
+    const now = this.ctx.currentTime + 0.05;
     [480, 720].forEach((freq, idx) => {
       if (!this.ctx || !this.sfxGain) return;
       const osc = this.ctx.createOscillator();
@@ -419,7 +419,7 @@ class SoundEngine {
     this.initContext();
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
 
-    const now = this.ctx.currentTime;
+    const now = this.ctx.currentTime + 0.05;
     // Pleasant arpeggio: C5, E5, G5, C6
     const notes = [523.25, 659.25, 783.99, 1046.5];
     notes.forEach((freq, idx) => {
@@ -453,7 +453,7 @@ class SoundEngine {
     this.initContext();
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
 
-    const now = this.ctx.currentTime;
+    const now = this.ctx.currentTime + 0.05;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
@@ -478,7 +478,7 @@ class SoundEngine {
     this.initContext();
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
 
-    const now = this.ctx.currentTime;
+    const now = this.ctx.currentTime + 0.05;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
@@ -500,7 +500,7 @@ class SoundEngine {
     this.initContext();
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
 
-    const now = this.ctx.currentTime;
+    const now = this.ctx.currentTime + 0.05;
     const notes = [523.25, 659.25, 783.99, 1046.5, 1318.51];
     notes.forEach((freq, idx) => {
       if (!this.ctx || !this.sfxGain) return;
@@ -526,7 +526,7 @@ class SoundEngine {
     this.initContext();
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
 
-    const now = this.ctx.currentTime;
+    const now = this.ctx.currentTime + 0.05;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
@@ -547,7 +547,7 @@ class SoundEngine {
     this.initContext();
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
 
-    const now = this.ctx.currentTime;
+    const now = this.ctx.currentTime + 0.05;
     const chords = [523.25, 659.25, 783.99, 1046.5, 1318.5];
     chords.forEach((freq, i) => {
       if (!this.ctx || !this.sfxGain) return;
