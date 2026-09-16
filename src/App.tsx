@@ -40,6 +40,8 @@ import {
   subscribeToLeaderboard,
   saveQuizRecordToCloud,
   subscribeToQuizRecords,
+  clearAllLeaderboardFromCloud,
+  clearAllQuizRecordsFromCloud,
 } from './firebase';
 import { initAuth, googleSignIn, logout } from './firebase';
 
@@ -71,12 +73,21 @@ const trashVisuals = [
   { emoji: '🛍️', bg: 'bg-green-600 text-white border-green-800 rounded-b-lg border-t-2' },
 ];
 
+function shuffleArray<T>(items: readonly T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 let availableWords: typeof wordList = [];
 
 function getNextWord() {
   if (availableWords.length === 0) {
-    // Refill and shuffle
-    availableWords = [...wordList].sort(() => Math.random() - 0.5);
+    // True Fisher-Yates shuffle across all 131 words in the deck
+    availableWords = shuffleArray(wordList);
   }
   return availableWords.pop()!;
 }
@@ -353,12 +364,17 @@ export default function App() {
     });
   };
 
-  const handleClearQuizRecords = () => {
+  const handleClearQuizRecords = async () => {
     setQuizHistory([]);
     try {
       localStorage.removeItem('TRASH_NOUNS_QUIZ_HISTORY_V1');
     } catch {
       // ignore
+    }
+    try {
+      await clearAllQuizRecordsFromCloud();
+    } catch (e) {
+      console.warn('Failed to clear quiz records from cloud:', e);
     }
   };
 
@@ -410,6 +426,8 @@ export default function App() {
 
   const handleGameEnd = () => {
     setGameState('end');
+    soundEngine.stopBgm();
+    setIsMusicPlaying(false);
     soundEngine.playGameOver();
     const cleanName = playerName.trim() || 'ผู้เล่น';
     const now = new Date();
@@ -454,7 +472,7 @@ export default function App() {
     });
   };
 
-  const handleClearLeaderboard = () => {
+  const handleClearLeaderboard = async () => {
     setLeaderboard([]);
     try {
       localStorage.removeItem(LEADERBOARD_STORAGE_KEY);
@@ -463,6 +481,11 @@ export default function App() {
     }
     setLatestEntryId(null);
     setPlayerRank(null);
+    try {
+      await clearAllLeaderboardFromCloud();
+    } catch (e) {
+      console.warn('Failed to clear leaderboard from cloud:', e);
+    }
   };
 
   const startGame = () => {
@@ -694,12 +717,12 @@ export default function App() {
             {!isMuted && isMusicPlaying ? (
               <>
                 <Volume2 size={13} className="text-emerald-600 animate-pulse flex-shrink-0" />
-                <span>เปิดเสียง</span>
+                <span>เสียง: เปิด</span>
               </>
             ) : (
               <>
                 <VolumeX size={13} className="text-gray-400 flex-shrink-0" />
-                <span>ปิดเสียง</span>
+                <span>เสียง: ปิด</span>
               </>
             )}
           </button>
@@ -825,12 +848,12 @@ export default function App() {
                   {!isMuted && isMusicPlaying ? (
                     <>
                       <Volume2 size={14} />
-                      <span>เปิดเสียง</span>
+                      <span>เปิดเสียงอยู่</span>
                     </>
                   ) : (
                     <>
                       <VolumeX size={14} />
-                      <span>ปิดเสียง</span>
+                      <span>เปิดเสียงดนตรี</span>
                     </>
                   )}
                 </button>

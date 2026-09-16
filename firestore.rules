@@ -11,7 +11,8 @@ service cloud.firestore {
                     && request.resource.data.correctCount is number
                     && request.resource.data.wrongCount is number
                     && request.resource.data.createdAt is number;
-      allow update, delete: if false;
+      allow delete: if true;
+      allow update: if false;
     }
 
     // Quiz records: Allow any player to view quiz history and submit completed quizzes
@@ -24,7 +25,8 @@ service cloud.firestore {
                     && request.resource.data.totalQuestions is number
                     && request.resource.data.percentage is number
                     && request.resource.data.createdAt is number;
-      allow update, delete: if false;
+      allow delete: if true;
+      allow update: if false;
     }
   }
 }

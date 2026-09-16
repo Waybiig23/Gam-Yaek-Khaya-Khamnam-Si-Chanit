@@ -6,6 +6,8 @@ import {
   collection,
   addDoc,
   getDocs,
+  deleteDoc,
+  doc,
   query,
   orderBy,
   limit,
@@ -197,5 +199,37 @@ export function subscribeToQuizRecords(
   } catch (error) {
     console.warn('Could not establish quiz subscription:', error);
     return () => {};
+  }
+}
+
+/**
+ * Clear all leaderboard entries from Cloud Firestore (Owner action)
+ */
+export async function clearAllLeaderboardFromCloud(): Promise<boolean> {
+  try {
+    const colRef = collection(db, LEADERBOARD_COLLECTION);
+    const snapshot = await getDocs(colRef);
+    const deletePromises = snapshot.docs.map((d) => deleteDoc(doc(db, LEADERBOARD_COLLECTION, d.id)));
+    await Promise.all(deletePromises);
+    return true;
+  } catch (error) {
+    console.error('Failed to clear leaderboard from cloud:', error);
+    return false;
+  }
+}
+
+/**
+ * Clear all quiz records from Cloud Firestore (Owner action)
+ */
+export async function clearAllQuizRecordsFromCloud(): Promise<boolean> {
+  try {
+    const colRef = collection(db, QUIZ_COLLECTION);
+    const snapshot = await getDocs(colRef);
+    const deletePromises = snapshot.docs.map((d) => deleteDoc(doc(db, QUIZ_COLLECTION, d.id)));
+    await Promise.all(deletePromises);
+    return true;
+  } catch (error) {
+    console.error('Failed to clear quiz records from cloud:', error);
+    return false;
   }
 }

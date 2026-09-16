@@ -1,20 +1,18 @@
-// Web Audio API Background Music & Sound Effects Engine
-// Procedural, lightweight, zero-latency, no external dependencies
+// Sound & Voice Audio Engine for แยกขยะคำนาม ๔ ชนิด
+// Combines real background music (with fallback CDN) and Web Audio SFX + Thai Speech Synthesis
 
 class SoundEngine {
-  private ctx: AudioContext | null = null;
+  private bgmAudio: HTMLAudioElement | null = null;
+  private bgmSources: string[] = [];
+  private currentSourceIdx: number = 0;
   private isBgmPlaying: boolean = false;
   private isMuted: boolean = false;
-  private bgmVolume: number = 0.35;
-  private sfxVolume: number = 0.5;
+  private bgmVolume: number = 0.5;
+  private sfxVolume: number = 0.6;
 
+  private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
-  private bgmGain: GainNode | null = null;
   private sfxGain: GainNode | null = null;
-
-  private bgmTimer: number | null = null;
-  private currentStep: number = 0;
-  private tempo: number = 108; // BPM
 
   constructor() {
     try {
@@ -29,10 +27,86 @@ class SoundEngine {
     } catch {
       // Ignore in SSR
     }
+
+    if (typeof window !== 'undefined') {
+      const unlockAudio = () => {
+        this.initContext();
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume().catch(() => {});
+        }
+        if (this.isBgmPlaying && !this.isMuted && this.bgmAudio && this.bgmAudio.paused) {
+          this.bgmAudio.play().catch(() => {});
+        }
+      };
+
+      window.addEventListener('click', unlockAudio, { passive: true });
+      window.addEventListener('touchstart', unlockAudio, { passive: true });
+      window.addEventListener('keydown', unlockAudio, { passive: true });
+    }
+  }
+
+  private initBgmAudio() {
+    if (typeof window === 'undefined') return;
+    if (this.bgmAudio) return;
+
+    try {
+      const base = (import.meta as any).env?.BASE_URL || '/';
+      const cleanBase = base.endsWith('/') ? base : base + '/';
+
+      const isGoogleScript = typeof window !== 'undefined' && 
+        (window.location.hostname.includes('google') || window.location.hostname.includes('googleusercontent'));
+
+      const cdnUrl = 'https://upload.wikimedia.org/wikipedia/commons/transcoded/1/1b/The_Entertainer_-_Scott_Joplin.ogg/The_Entertainer_-_Scott_Joplin.ogg.mp3';
+
+      // Chain of local assets and high-availability online fallback
+      if (isGoogleScript) {
+        this.bgmSources = [
+          cdnUrl,
+          `${cleanBase}audio/bgm.mp3`,
+          `${cleanBase}bgm.mp3`,
+          './audio/bgm.mp3',
+          './bgm.mp3',
+        ];
+      } else {
+        this.bgmSources = [
+          `${cleanBase}audio/bgm.mp3`,
+          `${cleanBase}bgm.mp3`,
+          './audio/bgm.mp3',
+          './bgm.mp3',
+          '/audio/bgm.mp3',
+          '/bgm.mp3',
+          cdnUrl,
+        ];
+      }
+      this.currentSourceIdx = 0;
+
+      const audio = new Audio();
+      audio.loop = true;
+      audio.volume = this.isMuted ? 0 : this.bgmVolume;
+      audio.preload = 'auto';
+      audio.crossOrigin = 'anonymous';
+
+      audio.src = this.bgmSources[0];
+
+      // Handle fallback if first audio path fails
+      audio.addEventListener('error', () => {
+        if (this.currentSourceIdx < this.bgmSources.length - 1) {
+          this.currentSourceIdx++;
+          audio.src = this.bgmSources[this.currentSourceIdx];
+          if (this.isBgmPlaying && !this.isMuted) {
+            audio.play().catch(() => {});
+          }
+        }
+      });
+
+      this.bgmAudio = audio;
+    } catch (err) {
+      console.warn('Failed to initialize BGM audio element:', err);
+    }
   }
 
   private initContext() {
-    if (!this.ctx) {
+    if (!this.ctx && typeof window !== 'undefined') {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioContextClass) {
         this.ctx = new AudioContextClass();
@@ -40,10 +114,6 @@ class SoundEngine {
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.value = this.isMuted ? 0 : 1;
         this.masterGain.connect(this.ctx.destination);
-
-        this.bgmGain = this.ctx.createGain();
-        this.bgmGain.gain.value = this.bgmVolume;
-        this.bgmGain.connect(this.masterGain);
 
         this.sfxGain = this.ctx.createGain();
         this.sfxGain.gain.value = this.sfxVolume;
@@ -76,15 +146,23 @@ class SoundEngine {
       // ignore
     }
 
-    if (this.masterGain && this.ctx) {
-      const now = this.ctx.currentTime + 0.05;
-      this.masterGain.gain.cancelScheduledValues(now);
-      this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
-      this.masterGain.gain.linearRampToValueAtTime(this.isMuted ? 0 : 1, now + 0.1);
+    if (this.bgmAudio) {
+      this.bgmAudio.volume = this.isMuted ? 0 : this.bgmVolume;
+      if (this.isMuted) {
+        this.bgmAudio.pause();
+      } else if (this.isBgmPlaying) {
+        this.bgmAudio.play().catch(() => {});
+      }
     }
 
-    // If unmuting and wasn't playing, start BGM
-    if (!this.isMuted && !this.isBgmPlaying) {
+    if (this.masterGain && this.ctx) {
+      const now = this.ctx.currentTime;
+      this.masterGain.gain.cancelScheduledValues(now);
+      this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 1, now);
+    }
+
+    // If unmuting while playing flag was active, trigger playback
+    if (!this.isMuted && this.isBgmPlaying) {
       this.startBgm();
     }
 
@@ -99,11 +177,8 @@ class SoundEngine {
       // ignore
     }
 
-    if (this.bgmGain && this.ctx) {
-      const now = this.ctx.currentTime + 0.05;
-      this.bgmGain.gain.cancelScheduledValues(now);
-      this.bgmGain.gain.setValueAtTime(this.bgmGain.gain.value, now);
-      this.bgmGain.gain.linearRampToValueAtTime(this.bgmVolume, now + 0.1);
+    if (this.bgmAudio) {
+      this.bgmAudio.volume = this.isMuted ? 0 : this.bgmVolume;
     }
   }
 
@@ -117,264 +192,46 @@ class SoundEngine {
 
   public startBgm() {
     this.initContext();
-    if (!this.ctx) return;
-
-    if (this.isBgmPlaying) return;
+    this.initBgmAudio();
     this.isBgmPlaying = true;
-    this.currentStep = 0;
 
-    if (this.bgmGain) {
-      const now = this.ctx.currentTime + 0.05;
-      this.bgmGain.gain.cancelScheduledValues(now);
-      this.bgmGain.gain.setValueAtTime(0, now);
-      this.bgmGain.gain.linearRampToValueAtTime(this.bgmVolume, now + 0.5);
+    if (this.isMuted) return;
+
+    if (this.bgmAudio) {
+      this.bgmAudio.volume = this.bgmVolume;
+      const playPromise = this.bgmAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('BGM play deferred until user interaction:', err);
+          const handleResume = () => {
+            if (this.isBgmPlaying && !this.isMuted && this.bgmAudio) {
+              this.bgmAudio.play().catch(() => {});
+            }
+            window.removeEventListener('click', handleResume);
+            window.removeEventListener('touchstart', handleResume);
+          };
+          window.addEventListener('click', handleResume, { once: true, passive: true });
+          window.addEventListener('touchstart', handleResume, { once: true, passive: true });
+        });
+      }
     }
-
-    const stepDurationMs = (60 / this.tempo / 4) * 1000; // 16th notes
-    this.bgmTimer = window.setInterval(() => {
-      this.tickBgm();
-    }, stepDurationMs);
   }
 
   public stopBgm() {
     this.isBgmPlaying = false;
-    if (this.bgmTimer) {
-      clearInterval(this.bgmTimer);
-      this.bgmTimer = null;
-    }
-
-    if (this.bgmGain && this.ctx) {
-      const now = this.ctx.currentTime + 0.05;
-      this.bgmGain.gain.cancelScheduledValues(now);
-      this.bgmGain.gain.setValueAtTime(this.bgmGain.gain.value, now);
-      this.bgmGain.gain.linearRampToValueAtTime(0, now + 0.3);
+    if (this.bgmAudio) {
+      this.bgmAudio.pause();
     }
   }
 
-  // Playful, cheerful, catchy musical sequence
-  // 64 16th steps = 4 bars in 4/4 time
-  private tickBgm() {
-    if (!this.ctx || !this.bgmGain || !this.isBgmPlaying || this.isMuted) {
-      this.currentStep = (this.currentStep + 1) % 64;
-      return;
-    }
-
-    const step = this.currentStep;
-    const now = this.ctx.currentTime + 0.05;
-
-    // Melody notes (in Hz)
-    // C4=261.63, D4=293.66, E4=329.63, G4=392.00, A4=440.00, C5=523.25, D5=587.33, E5=659.25, G5=783.99
-    const C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
-    const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99, A5 = 880.00;
-    const C3 = 130.81, G3 = 196.00, A3 = 220.00, F3 = 174.61;
-
-    // Bar 1: C Major (steps 0-15)
-    // Bar 2: G Major (steps 16-31)
-    // Bar 3: A Minor (steps 32-47)
-    // Bar 4: F Major / G turnaround (steps 48-63)
-
-    // Bassline (on beats 1 and 3.5)
-    if (step === 0) this.playBass(C3, now);
-    if (step === 10) this.playBass(C4, now);
-    if (step === 16) this.playBass(G3, now);
-    if (step === 26) this.playBass(D4, now);
-    if (step === 32) this.playBass(A3, now);
-    if (step === 42) this.playBass(E4, now);
-    if (step === 48) this.playBass(F3, now);
-    if (step === 56) this.playBass(G3, now);
-
-    // Light percussion (soft high-hat click on every 8th note, kick on 1, snare on 2 & 4)
-    if (step % 4 === 0) {
-      // Beat 1, 2, 3, 4
-      if (step % 16 === 0) {
-        this.playSoftKick(now);
-      } else if (step % 8 === 4) {
-        this.playSoftSnare(now);
-      }
-    }
-    if (step % 2 === 0) {
-      this.playSoftHiHat(now);
-    }
-
-    // Cheerful Marimba Lead Melody
-    const melodyMap: Record<number, number> = {
-      // Bar 1 (C)
-      0: C5, 4: E5, 8: G5, 12: A5, 14: G5,
-      // Bar 2 (G)
-      16: D5, 20: G5, 24: B4, 28: D5, 30: E5,
-      // Bar 3 (Am)
-      32: C5, 36: E5, 40: A5, 44: G5, 46: E5,
-      // Bar 4 (F -> G)
-      48: F4, 52: A4, 56: B4, 60: D5, 62: E5,
-    };
-
-    if (melodyMap[step]) {
-      this.playMarimba(melodyMap[step], now);
-    }
-
-    // Counter harmony on off-beats
-    const harmonyMap: Record<number, number> = {
-      2: E4, 6: G4, 18: D4, 22: G4, 34: C4, 38: E4, 50: C4, 54: F4, 58: G4,
-    };
-    if (harmonyMap[step]) {
-      this.playHarmony(harmonyMap[step], now);
-    }
-
-    this.currentStep = (this.currentStep + 1) % 64;
-  }
-
-  private playMarimba(freq: number, time: number) {
-    if (!this.ctx || !this.bgmGain) return;
-
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    const filter = this.ctx.createBiquadFilter();
-
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(freq, time);
-
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(1400, time);
-
-    gain.gain.setValueAtTime(0.001, time);
-    gain.gain.linearRampToValueAtTime(0.18, time + 0.012);
-    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.28);
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.bgmGain);
-
-    osc.start(time);
-    osc.stop(time + 0.3);
-  }
-
-  private playHarmony(freq: number, time: number) {
-    if (!this.ctx || !this.bgmGain) return;
-
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, time);
-
-    gain.gain.setValueAtTime(0.001, time);
-    gain.gain.linearRampToValueAtTime(0.08, time + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.22);
-
-    osc.connect(gain);
-    gain.connect(this.bgmGain);
-
-    osc.start(time);
-    osc.stop(time + 0.25);
-  }
-
-  private playBass(freq: number, time: number) {
-    if (!this.ctx || !this.bgmGain) return;
-
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, time);
-
-    gain.gain.setValueAtTime(0.001, time);
-    gain.gain.linearRampToValueAtTime(0.25, time + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.35);
-
-    osc.connect(gain);
-    gain.connect(this.bgmGain);
-
-    osc.start(time);
-    osc.stop(time + 0.38);
-  }
-
-  private playSoftHiHat(time: number) {
-    if (!this.ctx || !this.bgmGain) return;
-
-    // Filtered noise burst for delicate shaker / hi-hat
-    const bufferSize = this.ctx.sampleRate * 0.03;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
-    }
-
-    const noise = this.ctx.createBufferSource();
-    noise.buffer = buffer;
-
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'highpass';
-    filter.frequency.setValueAtTime(7000, time);
-
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.03, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
-
-    noise.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.bgmGain);
-
-    noise.start(time);
-    noise.stop(time + 0.03);
-  }
-
-  private playSoftKick(time: number) {
-    if (!this.ctx || !this.bgmGain) return;
-
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(130, time);
-    osc.frequency.exponentialRampToValueAtTime(45, time + 0.08);
-
-    gain.gain.setValueAtTime(0.2, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
-
-    osc.connect(gain);
-    gain.connect(this.bgmGain);
-
-    osc.start(time);
-    osc.stop(time + 0.13);
-  }
-
-  private playSoftSnare(time: number) {
-    if (!this.ctx || !this.bgmGain) return;
-
-    const bufferSize = this.ctx.sampleRate * 0.07;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * 0.5;
-    }
-
-    const noise = this.ctx.createBufferSource();
-    noise.buffer = buffer;
-
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(1800, time);
-
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.08, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
-
-    noise.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.bgmGain);
-
-    noise.start(time);
-    noise.stop(time + 0.07);
-  }
-
-  // Sound Effects (SFX)
+  // Sound Effects (SFX) via Web Audio API
   public playPickup() {
     this.initContext();
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
 
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    const now = this.ctx.currentTime + 0.05;
+    const now = this.ctx.currentTime;
 
     osc.type = 'sine';
     osc.frequency.setValueAtTime(320, now);
@@ -394,7 +251,7 @@ class SoundEngine {
     this.initContext();
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
 
-    const now = this.ctx.currentTime + 0.05;
+    const now = this.ctx.currentTime;
     [480, 720].forEach((freq, idx) => {
       if (!this.ctx || !this.sfxGain) return;
       const osc = this.ctx.createOscillator();
@@ -419,8 +276,8 @@ class SoundEngine {
     this.initContext();
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
 
-    const now = this.ctx.currentTime + 0.05;
-    // Pleasant arpeggio: C5, E5, G5, C6
+    const now = this.ctx.currentTime;
+    // Pleasant musical chime: C5, E5, G5, C6
     const notes = [523.25, 659.25, 783.99, 1046.5];
     notes.forEach((freq, idx) => {
       if (!this.ctx || !this.sfxGain) return;
@@ -431,7 +288,7 @@ class SoundEngine {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, t);
 
-      gain.gain.setValueAtTime(0.24, t);
+      gain.gain.setValueAtTime(0.22, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
 
       osc.connect(gain);
@@ -441,7 +298,7 @@ class SoundEngine {
       osc.stop(t + 0.18);
     });
 
-    // Voice cheer
+    // Voice encouragement
     if (streakCount >= 5 && streakCount % 5 === 0) {
       this.playComboVoice(streakCount);
     } else {
@@ -453,7 +310,7 @@ class SoundEngine {
     this.initContext();
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
 
-    const now = this.ctx.currentTime + 0.05;
+    const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
@@ -461,7 +318,7 @@ class SoundEngine {
     osc.frequency.setValueAtTime(220, now);
     osc.frequency.linearRampToValueAtTime(110, now + 0.22);
 
-    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.setValueAtTime(0.16, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
 
     osc.connect(gain);
@@ -470,7 +327,6 @@ class SoundEngine {
     osc.start(now);
     osc.stop(now + 0.24);
 
-    // Voice encouragement
     this.playRandomWrongVoice();
   }
 
@@ -478,7 +334,7 @@ class SoundEngine {
     this.initContext();
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
 
-    const now = this.ctx.currentTime + 0.05;
+    const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
@@ -500,7 +356,7 @@ class SoundEngine {
     this.initContext();
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
 
-    const now = this.ctx.currentTime + 0.05;
+    const now = this.ctx.currentTime;
     const notes = [523.25, 659.25, 783.99, 1046.5, 1318.51];
     notes.forEach((freq, idx) => {
       if (!this.ctx || !this.sfxGain) return;
@@ -526,14 +382,14 @@ class SoundEngine {
     this.initContext();
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
 
-    const now = this.ctx.currentTime + 0.05;
+    const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(880, now);
 
-    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.setValueAtTime(0.12, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
 
     osc.connect(gain);
@@ -547,7 +403,7 @@ class SoundEngine {
     this.initContext();
     if (!this.ctx || !this.sfxGain || this.isMuted) return;
 
-    const now = this.ctx.currentTime + 0.05;
+    const now = this.ctx.currentTime;
     const chords = [523.25, 659.25, 783.99, 1046.5, 1318.5];
     chords.forEach((freq, i) => {
       if (!this.ctx || !this.sfxGain) return;
@@ -558,7 +414,7 @@ class SoundEngine {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, t);
 
-      gain.gain.setValueAtTime(0.22, t);
+      gain.gain.setValueAtTime(0.2, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
 
       osc.connect(gain);
@@ -624,20 +480,17 @@ class SoundEngine {
   }
 
   public speak(text: string, type: 'correct' | 'wrong' | 'combo' | 'event' = 'event') {
-    // Notify UI for floating speech bubble regardless of audio mute state
     this.notifyVoice(text, type);
 
     if (this.isMuted) return;
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
 
     try {
-      // Cancel previous speech to keep audio snappy and real-time
       window.speechSynthesis.cancel();
-
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'th-TH';
-      utterance.rate = 1.15; // lively, brisk rate for gaming
-      utterance.pitch = 1.15; // cheerful, friendly pitch
+      utterance.rate = 1.15;
+      utterance.pitch = 1.15;
 
       const voices = window.speechSynthesis.getVoices();
       const thaiVoice = voices.find((v) => v.lang.toLowerCase().includes('th'));
@@ -647,7 +500,7 @@ class SoundEngine {
 
       window.speechSynthesis.speak(utterance);
     } catch {
-      // Fallback silently if browser blocks speech synthesis
+      // Fallback silently if speech is blocked
     }
   }
 }
