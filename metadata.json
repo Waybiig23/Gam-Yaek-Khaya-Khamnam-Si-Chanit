@@ -1,0 +1,6 @@
+{
+  "name": "เกมคุ้ยขยะแยกคำนาม ๔ ชนิด",
+  "description": "เกมการศึกษาภาษาไทย: คุ้ยขยะหาคำนาม แยกประเภทนามสามัญ นามวิสามัญ ลักษณนาม และอาการนาม พร้อมแบบทดสอบและกระดานคะแนนออนไลน์",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

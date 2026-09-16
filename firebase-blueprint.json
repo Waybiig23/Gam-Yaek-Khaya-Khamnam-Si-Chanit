@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "Leaderboard": {
+      "title": "Leaderboard",
+      "description": "Game leaderboard score records from all players",
+      "type": "object",
+      "properties": {
+        "playerName": { "type": "string", "description": "Name of the player" },
+        "score": { "type": "number", "description": "Final score earned in game" },
+        "correctCount": { "type": "number", "description": "Number of correct sorts" },
+        "wrongCount": { "type": "number", "description": "Number of mistakes" },
+        "date": { "type": "string", "description": "Display date string" },
+        "createdAt": { "type": "number", "description": "Epoch timestamp for sorting" }
+      },
+      "required": ["playerName", "score", "correctCount", "wrongCount", "date", "createdAt"]
+    },
+    "QuizRecord": {
+      "title": "QuizRecord",
+      "description": "Quiz test records (20 questions) by players",
+      "type": "object",
+      "properties": {
+        "playerName": { "type": "string", "description": "Name of the player" },
+        "score": { "type": "number", "description": "Score out of 20" },
+        "totalQuestions": { "type": "number", "description": "Total number of questions (20)" },
+        "percentage": { "type": "number", "description": "Percentage score" },
+        "date": { "type": "string", "description": "Display date string" },
+        "answers": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Selected option indices"
+        },
+        "createdAt": { "type": "number", "description": "Epoch timestamp for sorting" }
+      },
+      "required": ["playerName", "score", "totalQuestions", "percentage", "date", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/leaderboard/{entryId}": {
+      "schema": "Leaderboard",
+      "description": "Global leaderboard entries for noun sorting game"
+    },
+    "/quiz_records/{recordId}": {
+      "schema": "QuizRecord",
+      "description": "Global records of completed noun quizzes"
+    }
+  }
+}

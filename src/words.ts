@@ -1,0 +1,248 @@
+export const categories = [
+  {
+    id: 'common',
+    label: 'นามสามัญ',
+    fullTitle: 'นามทั่วไป (สามานยนาม)',
+    sublabel: 'ไม่เจาะจง เช่น คน บ้าน โรงเรียน',
+    hint: 'คำนามทั่วไป ไม่ชี้เฉพาะ (รวม การบ้าน การเรือน)',
+    gradient: 'from-blue-500 to-sky-600',
+    border: 'border-blue-400/80',
+    bg: 'bg-gradient-to-b from-blue-50/90 to-sky-100/90 hover:from-blue-100 hover:to-sky-200',
+    headerBg: 'bg-blue-600 text-white',
+    badge: 'bg-blue-500 text-white',
+    icon: 'text-blue-600',
+    accentColor: '#2563eb',
+    binIcon: '🗑️',
+  },
+  {
+    id: 'proper',
+    label: 'นามวิสามัญ',
+    fullTitle: 'นามชี้เฉพาะ (วิสามานยนาม)',
+    sublabel: 'ชื่อเฉพาะ เช่น นันทวัฒน์ ฟูจิ กรุงเทพ',
+    hint: 'ชื่อเฉพาะบุคคล สถานที่ หน่วยงาน',
+    gradient: 'from-rose-500 to-red-600',
+    border: 'border-rose-400/80',
+    bg: 'bg-gradient-to-b from-rose-50/90 to-red-100/90 hover:from-rose-100 hover:to-red-200',
+    headerBg: 'bg-rose-600 text-white',
+    badge: 'bg-rose-500 text-white',
+    icon: 'text-rose-600',
+    accentColor: '#e11d48',
+    binIcon: '🪣',
+  },
+  {
+    id: 'classifier',
+    label: 'ลักษณนาม',
+    fullTitle: 'บอกลักษณะ/กลุ่ม (ลักษณนาม)',
+    sublabel: 'บอกหน่วย เช่น ตัว แท่ง เล่ม ฝูง',
+    hint: 'บอกลักษณะ ขนาด หรือบอกหน่วยกริยา',
+    gradient: 'from-emerald-500 to-teal-600',
+    border: 'border-emerald-400/80',
+    bg: 'bg-gradient-to-b from-emerald-50/90 to-teal-100/90 hover:from-emerald-100 hover:to-teal-200',
+    headerBg: 'bg-emerald-600 text-white',
+    badge: 'bg-emerald-500 text-white',
+    icon: 'text-emerald-600',
+    accentColor: '#059669',
+    binIcon: '📦',
+  },
+  {
+    id: 'abstract',
+    label: 'อาการนาม',
+    fullTitle: 'การ/ความ + กริยา/วิเศษณ์',
+    sublabel: 'การ/ความ + กริยา/วิเศษณ์ เช่น การวิ่ง ความดี',
+    hint: 'นำหน้ากริยาหรือวิเศษณ์ (ระวังคำหลอก!)',
+    gradient: 'from-purple-500 to-violet-600',
+    border: 'border-purple-400/80',
+    bg: 'bg-gradient-to-b from-purple-50/90 to-violet-100/90 hover:from-purple-100 hover:to-violet-200',
+    headerBg: 'bg-purple-600 text-white',
+    badge: 'bg-purple-500 text-white',
+    icon: 'text-purple-600',
+    accentColor: '#7c3aed',
+    binIcon: '🧺',
+  },
+];
+
+export const wordList = [
+  // 1. คำนามสามัญ (นามทั่วไป - ไม่ได้เจาะจงว่าหมายถึงสิ่งใด มีทั้งกว้างและแคบ เช่น ตำแหน่ง อาชีพ ผลไม้ สัตว์ สิ่งของ)
+  { text: 'นายกรัฐมนตรี', category: 'common', explanation: 'เป็นชื่อตำแหน่งทั่วไป ไม่ได้ระบุตัวบุคคล จึงเป็นคำนามสามัญ' },
+  // คำหลอกอาการนาม (คำที่ขึ้นต้นด้วย "การ" หรือ "ความ" แต่นำหน้าคำนาม จึงจัดเป็น "คำนามสามัญ" ไม่ใช่อาการนาม!)
+  {
+    text: 'การบ้าน',
+    category: 'common',
+    isTrap: true,
+    explanation: '"บ้าน" เป็นคำนามอยู่แล้ว การนำเอาคำว่า "การ" ไปนำหน้า จึงไม่ทำให้เป็นอาการนาม แต่เป็นคำนามสามัญ',
+  },
+  {
+    text: 'การเรือน',
+    category: 'common',
+    isTrap: true,
+    explanation: '"เรือน" เป็นคำนาม การนำ "การ" ไปนำหน้า จึงเป็นนามสามัญ ไม่ใช่อาการนาม',
+  },
+  {
+    text: 'การเมือง',
+    category: 'common',
+    isTrap: true,
+    explanation: '"เมือง" เป็นคำนาม การนำ "การ" ไปนำหน้า จึงเป็นนามสามัญ ไม่ใช่อาการนาม',
+  },
+  {
+    text: 'การเงิน',
+    category: 'common',
+    isTrap: true,
+    explanation: '"เงิน" เป็นคำนาม การนำ "การ" ไปนำหน้า จึงเป็นนามสามัญ ไม่ใช่อาการนาม',
+  },
+  {
+    text: 'การประปา',
+    category: 'common',
+    isTrap: true,
+    explanation: '"ประปา" เป็นคำนาม การนำ "การ" ไปนำหน้า จึงเป็นนามสามัญ',
+  },
+  {
+    text: 'การไฟฟ้า',
+    category: 'common',
+    isTrap: true,
+    explanation: '"ไฟฟ้า" เป็นคำนาม การนำ "การ" ไปนำหน้า จึงเป็นนามสามัญ',
+  },
+  {
+    text: 'ความแพ่ง',
+    category: 'common',
+    isTrap: true,
+    explanation: '"แพ่ง" เป็นศัพท์คดีความ (นาม) การนำ "ความ" ไปนำหน้า จึงเป็นนามสามัญ',
+  },
+  {
+    text: 'ความอาญา',
+    category: 'common',
+    isTrap: true,
+    explanation: '"อาญา" เป็นศัพท์คดีความ (นาม) การนำ "ความ" ไปนำหน้า จึงเป็นนามสามัญ',
+  },
+  { text: 'คน', category: 'common' },
+  { text: 'บ้าน', category: 'common' },
+  { text: 'วัด', category: 'common' },
+  { text: 'โรงเรียน', category: 'common' },
+  { text: 'สัตว์', category: 'common' },
+  { text: 'ข้าว', category: 'common' },
+  { text: 'ช้าง', category: 'common' },
+  { text: 'แมว', category: 'common' },
+  { text: 'สุนัข', category: 'common' },
+  { text: 'ผลไม้', category: 'common' },
+  { text: 'ทุเรียน', category: 'common' },
+  { text: 'มะม่วง', category: 'common' },
+  { text: 'ชมพู่', category: 'common' },
+  { text: 'ก้านยาว', category: 'common' },
+  { text: 'หมอนทอง', category: 'common' },
+  { text: 'ชะนี', category: 'common' },
+  { text: 'ฟ้าลั่น', category: 'common' },
+  { text: 'เขียวเสวย', category: 'common' },
+  { text: 'อกร่อง', category: 'common' },
+  { text: 'คุณครู', category: 'common' },
+  { text: 'แพทย์', category: 'common' },
+  { text: 'ตำรวจ', category: 'common' },
+  { text: 'นักเรียน', category: 'common' },
+  { text: 'ดินสอ', category: 'common' },
+  { text: 'ปากกา', category: 'common' },
+  { text: 'หนังสือ', category: 'common' },
+  { text: 'ทะเล', category: 'common' },
+  { text: 'พัดลม', category: 'common' },
+  { text: 'ถนน', category: 'common' },
+  { text: 'ภูเขา', category: 'common' },
+  { text: 'โทรศัพท์', category: 'common' },
+  { text: 'คอมพิวเตอร์', category: 'common' },
+  { text: 'ดอกไม้', category: 'common' },
+  { text: 'จักรยาน', category: 'common' },
+  { text: 'โต๊ะ', category: 'common' },
+  { text: 'เก้าอี้', category: 'common' },
+  { text: 'รองเท้า', category: 'common' },
+  { text: 'กระเป๋า', category: 'common' },
+  { text: 'เสื้อผ้า', category: 'common' },
+  { text: 'แว่นตา', category: 'common' },
+  { text: 'นาฬิกา', category: 'common' },
+  { text: 'ต้นไม้', category: 'common' },
+  { text: 'แม่น้ำ', category: 'common' },
+  { text: 'สะพาน', category: 'common' },
+
+  // 2. คำนามวิสามัญ (นามชี้เฉพาะ - ชื่อเฉพาะสำหรับเรียกบุคคลหรือสิ่งใดสิ่งหนึ่ง มักใช้ตามหลังนามสามัญ)
+  { text: 'นันทวัฒน์', category: 'proper' }, // ชื่อเฉพาะของคน (จากภาพ)
+  { text: 'ฟูจิ', category: 'proper' }, // ชื่อเฉพาะของภูเขาไฟ (จากภาพ)
+  { text: 'อาจารย์เพ็ญศรี', category: 'proper' }, // นามวิสามัญตามหลังนามสามัญ (จากภาพ)
+  { text: 'ประเทศไทย', category: 'proper' }, // ชื่อเฉพาะของประเทศ (จากภาพ)
+  { text: 'จังหวัดอุดรธานี', category: 'proper' }, // ชื่อเฉพาะของจังหวัด (จากภาพ)
+  { text: 'โรงเรียนบ้านเจริญสุข', category: 'proper' }, // ชื่อเฉพาะของโรงเรียน (จากภาพ)
+  { text: 'เชียงใหม่', category: 'proper' },
+  { text: 'กรุงเทพมหานคร', category: 'proper' },
+  { text: 'ภูเก็ต', category: 'proper' },
+  { text: 'สุนทรภู่', category: 'proper' },
+  { text: 'พระอภัยมณี', category: 'proper' },
+  { text: 'ดอยอินทนนท์', category: 'proper' },
+  { text: 'แม่น้ำเจ้าพระยา', category: 'proper' },
+  { text: 'วัดพระแก้ว', category: 'proper' },
+  { text: 'โรงพยาบาลศิริราช', category: 'proper' },
+  { text: 'ดาวพฤหัสบดี', category: 'proper' },
+  { text: 'ดาวอังคาร', category: 'proper' },
+  { text: 'ทวีปเอเชีย', category: 'proper' },
+  { text: 'ทวีปยุโรป', category: 'proper' },
+  { text: 'วันจันทร์', category: 'proper' },
+  { text: 'เดือนมกราคม', category: 'proper' },
+  { text: 'รามเกียรติ์', category: 'proper' },
+  { text: 'สะพานพระราม ๘', category: 'proper' },
+
+  // 3. คำลักษณนาม (บอกลักษณะของคำนามและคำกริยา รวมถึงสมุหนาม)
+  { text: 'แท่ง', category: 'classifier' }, // ดินสอ 1 แท่ง (จากภาพ)
+  { text: 'ด้าม', category: 'classifier' }, // ปากกา 2 ด้าม (จากภาพ)
+  { text: 'เล่ม', category: 'classifier' }, // หนังสือ 3 เล่ม (จากภาพ)
+  { text: 'ฝูงผึ้ง', category: 'classifier' }, // บอกหมวดหมู่/สมุหนาม (จากภาพ)
+  { text: 'โขลงช้าง', category: 'classifier' }, // บอกหมวดหมู่/สมุหนาม (จากภาพ)
+  { text: 'ฝูง', category: 'classifier' },
+  { text: 'โขลง', category: 'classifier' },
+  { text: 'ที', category: 'classifier' }, // ลักษณนามของคำกริยา: ตี 5 ที, ช่วยหยุดที (จากภาพ)
+  { text: 'ก้าว', category: 'classifier' }, // ลักษณนามของคำกริยา: เดิน 20 ก้าว (จากภาพ)
+  { text: 'ตื่น', category: 'classifier' }, // ลักษณนามของคำกริยา: หลับ 2 ตื่น (จากภาพ)
+  { text: 'ฟอด', category: 'classifier' }, // ลักษณนามของคำกริยา: หอม 2 ฟอด (จากภาพ)
+  { text: 'กอง', category: 'classifier' },
+  { text: 'คณะ', category: 'classifier' },
+  { text: 'แผ่น', category: 'classifier' },
+  { text: 'คัน', category: 'classifier' },
+  { text: 'ตัว', category: 'classifier' },
+  { text: 'ใบ', category: 'classifier' },
+  { text: 'ชิ้น', category: 'classifier' },
+  { text: 'กลุ่ม', category: 'classifier' },
+  { text: 'วง', category: 'classifier' },
+  { text: 'หลัง', category: 'classifier' },
+  { text: 'เส้น', category: 'classifier' },
+  { text: 'สาย', category: 'classifier' },
+  { text: 'กระบอก', category: 'classifier' },
+  { text: 'เชือก', category: 'classifier' },
+  { text: 'บาน', category: 'classifier' },
+  { text: 'คู่', category: 'classifier' },
+  { text: 'หยด', category: 'classifier' },
+  { text: 'เครื่อง', category: 'classifier' },
+
+  // 4. คำอาการนาม (การนำคำกริยาหรือคำวิเศษณ์มาแปลงเป็นคำนาม โดยเติม การ- และ ความ-)
+  { text: 'การนอน', category: 'abstract' }, // การ + กริยา (จากภาพ)
+  { text: 'การกิน', category: 'abstract' }, // การ + กริยา (จากภาพ)
+  { text: 'ความรัก', category: 'abstract' }, // ความ + กริยา (จากภาพ)
+  { text: 'ความคิดเห็น', category: 'abstract' }, // ความ + กริยา (จากภาพ)
+  { text: 'ความงาม', category: 'abstract' }, // ความ + วิเศษณ์ (จากภาพ)
+  { text: 'ความดี', category: 'abstract' }, // ความ + วิเศษณ์ (จากภาพ)
+  { text: 'ความร้อน', category: 'abstract' }, // ความ + วิเศษณ์ (จากภาพ)
+  {
+    text: 'ความหลัง',
+    category: 'abstract',
+    explanation: 'คำว่า "หลัง" ในที่นี้เป็นคำวิเศษณ์ หมายถึง เรื่องราวหรืออดีตที่ล่วงมาแล้ว (ความ + วิเศษณ์) จึงจัดเป็น "คำอาการนาม"',
+  },
+  { text: 'การวิ่ง', category: 'abstract' },
+  { text: 'ความคิด', category: 'abstract' },
+  { text: 'การศึกษา', category: 'abstract' },
+  { text: 'ความฝัน', category: 'abstract' },
+  { text: 'ความสุข', category: 'abstract' },
+  { text: 'การทำงาน', category: 'abstract' },
+  { text: 'ความยุติธรรม', category: 'abstract' },
+  { text: 'การเรียน', category: 'abstract' },
+  { text: 'ความรู้', category: 'abstract' },
+  { text: 'การพูด', category: 'abstract' },
+  { text: 'ความซื่อสัตย์', category: 'abstract' },
+  { text: 'ความหวัง', category: 'abstract' },
+  { text: 'ความตาย', category: 'abstract' },
+  { text: 'ความโกรธ', category: 'abstract' },
+  { text: 'การเดิน', category: 'abstract' },
+  { text: 'การหัวเราะ', category: 'abstract' },
+  { text: 'ความชั่ว', category: 'abstract' },
+  { text: 'ความจริง', category: 'abstract' },
+];

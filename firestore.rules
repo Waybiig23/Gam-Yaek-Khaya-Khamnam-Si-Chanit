@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Leaderboard collection: Allow any player to read scores and post new scores
+    match /leaderboard/{entryId} {
+      allow read: if true;
+      allow create: if request.resource.data.playerName is string
+                    && request.resource.data.playerName.size() > 0
+                    && request.resource.data.playerName.size() <= 50
+                    && request.resource.data.score is number
+                    && request.resource.data.correctCount is number
+                    && request.resource.data.wrongCount is number
+                    && request.resource.data.createdAt is number;
+      allow update, delete: if false;
+    }
+
+    // Quiz records: Allow any player to view quiz history and submit completed quizzes
+    match /quiz_records/{recordId} {
+      allow read: if true;
+      allow create: if request.resource.data.playerName is string
+                    && request.resource.data.playerName.size() > 0
+                    && request.resource.data.playerName.size() <= 50
+                    && request.resource.data.score is number
+                    && request.resource.data.totalQuestions is number
+                    && request.resource.data.percentage is number
+                    && request.resource.data.createdAt is number;
+      allow update, delete: if false;
+    }
+  }
+}
