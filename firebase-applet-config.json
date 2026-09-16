@@ -3,6 +3,7 @@
   "appId": "1:386350323460:web:eaf8b348964236cf7b6251",
   "apiKey": "AIzaSyAvui-HGjKpEizf6GirZ8fP3bcem5z38_o",
   "authDomain": "rapid-notch-g9v0l.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-280c73f7-32ee-4f59-a226-ef1a670e02a3",
   "storageBucket": "rapid-notch-g9v0l.firebasestorage.app",
   "messagingSenderId": "386350323460",
   "measurementId": "",
