@@ -7,6 +7,7 @@ import {
   addDoc,
   getDocs,
   deleteDoc,
+  writeBatch,
   doc,
   query,
   orderBy,
@@ -209,12 +210,25 @@ export async function clearAllLeaderboardFromCloud(): Promise<boolean> {
   try {
     const colRef = collection(db, LEADERBOARD_COLLECTION);
     const snapshot = await getDocs(colRef);
-    const deletePromises = snapshot.docs.map((d) => deleteDoc(doc(db, LEADERBOARD_COLLECTION, d.id)));
-    await Promise.all(deletePromises);
+    if (snapshot.empty) return true;
+
+    const batch = writeBatch(db);
+    snapshot.docs.forEach((docSnap) => {
+      batch.delete(docSnap.ref);
+    });
+    await batch.commit();
     return true;
   } catch (error) {
-    console.error('Failed to clear leaderboard from cloud:', error);
-    return false;
+    console.error('Failed to batch clear leaderboard from cloud:', error);
+    try {
+      const colRef = collection(db, LEADERBOARD_COLLECTION);
+      const snapshot = await getDocs(colRef);
+      await Promise.all(snapshot.docs.map((d) => deleteDoc(d.ref)));
+      return true;
+    } catch (fallbackError) {
+      console.error('Fallback deleteDoc also failed:', fallbackError);
+      return false;
+    }
   }
 }
 
@@ -225,11 +239,24 @@ export async function clearAllQuizRecordsFromCloud(): Promise<boolean> {
   try {
     const colRef = collection(db, QUIZ_COLLECTION);
     const snapshot = await getDocs(colRef);
-    const deletePromises = snapshot.docs.map((d) => deleteDoc(doc(db, QUIZ_COLLECTION, d.id)));
-    await Promise.all(deletePromises);
+    if (snapshot.empty) return true;
+
+    const batch = writeBatch(db);
+    snapshot.docs.forEach((docSnap) => {
+      batch.delete(docSnap.ref);
+    });
+    await batch.commit();
     return true;
   } catch (error) {
-    console.error('Failed to clear quiz records from cloud:', error);
-    return false;
+    console.error('Failed to batch clear quiz records from cloud:', error);
+    try {
+      const colRef = collection(db, QUIZ_COLLECTION);
+      const snapshot = await getDocs(colRef);
+      await Promise.all(snapshot.docs.map((d) => deleteDoc(d.ref)));
+      return true;
+    } catch (fallbackError) {
+      console.error('Fallback deleteDoc also failed:', fallbackError);
+      return false;
+    }
   }
 }

@@ -23,14 +23,25 @@ import { soundEngine } from '../utils/soundEngine';
 
 const OWNER_PASSCODE = '237280';
 
+const normalizePasscode = (val: string): string => {
+  const thaiMap: Record<string, string> = {
+    '๐': '0', '๑': '1', '๒': '2', '๓': '3', '๔': '4',
+    '๕': '5', '๖': '6', '๗': '7', '๘': '8', '๙': '9',
+  };
+  return val
+    .replace(/[๐-๙]/g, (ch) => thaiMap[ch] || ch)
+    .replace(/[^0-9]/g, '')
+    .trim();
+};
+
 interface LeaderboardModalProps {
   isOpen: boolean;
   onClose: () => void;
   entries: LeaderboardEntry[];
   quizRecords?: QuizRecord[];
   currentEntryId?: string | null;
-  onClear: () => void;
-  onClearQuizRecords?: () => void;
+  onClear: () => void | Promise<void>;
+  onClearQuizRecords?: () => void | Promise<void>;
   initialTab?: 'game' | 'quiz';
 }
 
@@ -50,6 +61,7 @@ export default function LeaderboardModal({
   const [passcodeError, setPasscodeError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isSuccessState, setIsSuccessState] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -73,40 +85,49 @@ export default function LeaderboardModal({
     setPasscodeInput('');
     setPasscodeError(null);
     setIsSuccessState(false);
+    setIsDeleting(false);
     setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
   };
 
   const handleClosePasscodeModal = () => {
-    if (isSuccessState) return;
+    if (isSuccessState || isDeleting) return;
     setAuthModalTarget(null);
     setPasscodeInput('');
     setPasscodeError(null);
+    setIsDeleting(false);
   };
 
-  const handleVerifyAndClear = (e?: FormEvent) => {
+  const handleVerifyAndClear = async (e?: FormEvent) => {
     if (e) e.preventDefault();
-    if (isSuccessState) return;
+    if (isSuccessState || isDeleting) return;
 
-    if (passcodeInput.trim() === OWNER_PASSCODE) {
+    const normalized = normalizePasscode(passcodeInput);
+
+    if (normalized === OWNER_PASSCODE) {
       setIsSuccessState(true);
+      setIsDeleting(true);
       setPasscodeError(null);
       soundEngine.playCorrect();
 
-      setTimeout(() => {
+      try {
         if (authModalTarget === 'game') {
-          onClear();
-          setToastMessage('✅ ล้างประวัติเกมสำเร็จเรียบร้อยโดยเจ้าของระบบ');
+          await onClear();
+          setToastMessage('✅ ล้างประวัติเกมสำเร็จเรียบร้อย');
         } else if (authModalTarget === 'quiz' && onClearQuizRecords) {
-          onClearQuizRecords();
-          setToastMessage('✅ ล้างประวัติแบบทดสอบสำเร็จเรียบร้อยโดยเจ้าของระบบ');
+          await onClearQuizRecords();
+          setToastMessage('✅ ล้างประวัติแบบทดสอบสำเร็จเรียบร้อย');
         }
-        setAuthModalTarget(null);
+      } catch (err) {
+        console.error('Failed to clear records:', err);
+      } finally {
+        setIsDeleting(false);
         setIsSuccessState(false);
+        setAuthModalTarget(null);
         setPasscodeInput('');
         setTimeout(() => setToastMessage(null), 3500);
-      }, 700);
+      }
     } else {
       soundEngine.playWrong();
       setPasscodeError('❌ รหัสผ่านไม่ถูกต้อง! เฉพาะเจ้าของเกมเท่านั้นที่สามารถล้างประวัติได้');
@@ -115,7 +136,7 @@ export default function LeaderboardModal({
   };
 
   const handleDigitPress = (digit: string) => {
-    if (isSuccessState) return;
+    if (isSuccessState || isDeleting) return;
     if (passcodeInput.length < 10) {
       setPasscodeInput((prev) => prev + digit);
       setPasscodeError(null);
@@ -123,13 +144,13 @@ export default function LeaderboardModal({
   };
 
   const handleBackspace = () => {
-    if (isSuccessState) return;
+    if (isSuccessState || isDeleting) return;
     setPasscodeInput((prev) => prev.slice(0, -1));
     setPasscodeError(null);
   };
 
   const handleClearInput = () => {
-    if (isSuccessState) return;
+    if (isSuccessState || isDeleting) return;
     setPasscodeInput('');
     setPasscodeError(null);
   };
@@ -386,20 +407,20 @@ export default function LeaderboardModal({
               id="clear-leaderboard-btn"
               onClick={() => handleOpenPasscodeModal('game')}
               className="text-xs text-rose-600 hover:text-rose-800 font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-rose-50 border border-rose-200/80 transition-colors cursor-pointer"
-              title="เฉพาะเจ้าของเกมเท่านั้น (ต้องใส่รหัส 237280)"
+              title="เฉพาะผู้ดูแลระบบหรือเจ้าของเกม"
             >
               <Lock size={13} className="text-rose-500" />
-              <span>ล้างประวัติเกม (รหัสเจ้าของ)</span>
+              <span>ล้างประวัติเกม (เฉพาะเจ้าของ)</span>
             </button>
           ) : activeTab === 'quiz' && quizRecords.length > 0 && onClearQuizRecords ? (
             <button
               id="clear-quiz-history-btn"
               onClick={() => handleOpenPasscodeModal('quiz')}
               className="text-xs text-rose-600 hover:text-rose-800 font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-rose-50 border border-rose-200/80 transition-colors cursor-pointer"
-              title="เฉพาะเจ้าของเกมเท่านั้น (ต้องใส่รหัส 237280)"
+              title="เฉพาะผู้ดูแลระบบหรือเจ้าของเกม"
             >
               <Lock size={13} className="text-rose-500" />
-              <span>ล้างประวัติแบบทดสอบ (รหัสเจ้าของ)</span>
+              <span>ล้างประวัติแบบทดสอบ (เฉพาะเจ้าของ)</span>
             </button>
           ) : (
             <div className="text-[11px] text-gray-400 font-medium">
@@ -437,13 +458,13 @@ export default function LeaderboardModal({
                     </div>
                     <div>
                       <h3 className="text-sm sm:text-base font-black leading-tight">ยืนยันสิทธิ์เจ้าของเกม</h3>
-                      <p className="text-[10px] text-rose-100 font-medium">Owner Authorization Required</p>
+                      <p className="text-[10px] text-rose-100 font-medium">Owner Security Verification</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={handleClosePasscodeModal}
-                    disabled={isSuccessState}
+                    disabled={isSuccessState || isDeleting}
                     className="p-1 text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-colors cursor-pointer"
                   >
                     <X size={18} />
@@ -454,11 +475,11 @@ export default function LeaderboardModal({
                 <form onSubmit={handleVerifyAndClear} className="p-4 space-y-3">
                   <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-2.5 text-[11px] sm:text-xs text-amber-900 leading-relaxed">
                     <div className="font-bold flex items-center gap-1 text-amber-950 mb-0.5">
-                      <span>🌍 เกมนี้เปิดเล่นทั่วโลก</span>
+                      <span>🌍 พื้นที่เก็บข้อมูลส่วนกลาง</span>
                     </div>
                     <span>
-                      เพื่อป้องกันข้อมูลคะแนนสูญหาย การล้าง{authModalTarget === 'game' ? 'ประวัติเกมและตารางอันดับ' : 'ประวัติแบบทดสอบ'}
-                      จำเป็นต้องใส่รหัสยืนยันตัวตนเจ้าของเกม <b>(237280)</b>
+                      เพื่อความปลอดภัยของข้อมูลผู้เล่นทั่วโลก การล้าง{authModalTarget === 'game' ? 'ประวัติเกมและตารางอันดับ' : 'ประวัติแบบทดสอบ'}
+                      จำเป็นต้องใส่รหัสผ่านความปลอดภัยเฉพาะเจ้าของระบบ
                     </span>
                   </div>
 
@@ -493,7 +514,7 @@ export default function LeaderboardModal({
                           setPasscodeError(null);
                         }}
                         placeholder="••••••"
-                        disabled={isSuccessState}
+                        disabled={isSuccessState || isDeleting}
                         className={`w-full text-center text-xl font-mono font-black tracking-widest py-2 px-3 rounded-xl border-2 transition-all outline-hidden ${
                           passcodeError
                             ? 'border-rose-500 bg-rose-50 text-rose-900 animate-shake'
@@ -535,7 +556,7 @@ export default function LeaderboardModal({
                         key={digit}
                         type="button"
                         onClick={() => handleDigitPress(digit)}
-                        disabled={isSuccessState}
+                        disabled={isSuccessState || isDeleting}
                         className="py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 active:scale-95 text-gray-800 font-bold font-mono text-base rounded-xl transition-all cursor-pointer select-none"
                       >
                         {digit}
@@ -544,7 +565,7 @@ export default function LeaderboardModal({
                     <button
                       type="button"
                       onClick={handleClearInput}
-                      disabled={isSuccessState}
+                      disabled={isSuccessState || isDeleting}
                       className="py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 active:scale-95 text-gray-500 font-bold text-xs rounded-xl transition-all cursor-pointer select-none"
                     >
                       ล้าง
@@ -552,7 +573,7 @@ export default function LeaderboardModal({
                     <button
                       type="button"
                       onClick={() => handleDigitPress('0')}
-                      disabled={isSuccessState}
+                      disabled={isSuccessState || isDeleting}
                       className="py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 active:scale-95 text-gray-800 font-bold font-mono text-base rounded-xl transition-all cursor-pointer select-none"
                     >
                       0
@@ -560,7 +581,7 @@ export default function LeaderboardModal({
                     <button
                       type="button"
                       onClick={handleBackspace}
-                      disabled={isSuccessState}
+                      disabled={isSuccessState || isDeleting}
                       className="py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 active:scale-95 text-gray-700 font-bold text-sm rounded-xl transition-all cursor-pointer select-none flex items-center justify-center"
                     >
                       ⌫
@@ -572,19 +593,32 @@ export default function LeaderboardModal({
                     <button
                       type="button"
                       onClick={handleClosePasscodeModal}
-                      disabled={isSuccessState}
+                      disabled={isSuccessState || isDeleting}
                       className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs sm:text-sm font-bold rounded-xl transition-colors cursor-pointer"
                     >
                       ยกเลิก
                     </button>
                     <button
-                      type="submit"
+                      type="button"
                       id="confirm-owner-clear-btn"
-                      disabled={isSuccessState || passcodeInput.length === 0}
-                      className="flex-1 py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all active:scale-98 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleVerifyAndClear();
+                      }}
+                      disabled={isSuccessState || isDeleting || normalizePasscode(passcodeInput).length === 0}
+                      className="flex-1 py-2.5 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all active:scale-98 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
                     >
-                      <Trash2 size={14} />
-                      <span>ยืนยันล้างประวัติ</span>
+                      {isDeleting ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>กำลังล้างข้อมูล...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 size={14} />
+                          <span>ยืนยันล้างประวัติ</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>

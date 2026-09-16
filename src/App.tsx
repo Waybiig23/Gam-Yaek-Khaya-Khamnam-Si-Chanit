@@ -313,25 +313,29 @@ export default function App() {
   useEffect(() => {
     // 1. Sync global leaderboard from cloud
     const unsubscribeLeaderboard = subscribeToLeaderboard((cloudEntries) => {
-      if (cloudEntries && cloudEntries.length > 0) {
-        setLeaderboard(cloudEntries);
-        try {
+      setLeaderboard(cloudEntries);
+      try {
+        if (cloudEntries.length > 0) {
           localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(cloudEntries));
-        } catch {
-          // ignore
+        } else {
+          localStorage.removeItem(LEADERBOARD_STORAGE_KEY);
         }
+      } catch {
+        // ignore
       }
     });
 
     // 2. Sync global quiz records from cloud
     const unsubscribeQuiz = subscribeToQuizRecords((cloudQuizRecords) => {
-      if (cloudQuizRecords && cloudQuizRecords.length > 0) {
-        setQuizHistory(cloudQuizRecords);
-        try {
+      setQuizHistory(cloudQuizRecords);
+      try {
+        if (cloudQuizRecords.length > 0) {
           localStorage.setItem('TRASH_NOUNS_QUIZ_HISTORY_V1', JSON.stringify(cloudQuizRecords));
-        } catch {
-          // ignore
+        } else {
+          localStorage.removeItem('TRASH_NOUNS_QUIZ_HISTORY_V1');
         }
+      } catch {
+        // ignore
       }
     });
 
